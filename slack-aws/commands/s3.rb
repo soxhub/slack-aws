@@ -14,7 +14,7 @@ module SlackAws
           options[:max_keys] = arguments.shift || 10
           send_fields client, data.channel, Aws::S3::Client.new.list_objects(options).contents, *[:key, :size, :last_modified].concat(arguments)
         else
-          send_message_with_gif client, data.channel, 'Syntax: aws s3 [command], need `aws help`?', 'idiot'
+          send_message client, data.channel, 'Syntax: aws s3 [command], need `aws help`?'
         end
       end
     end
