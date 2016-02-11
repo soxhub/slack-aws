@@ -104,7 +104,7 @@ module SlackAws
 							instance = instance_hash[create_instance]
 							fail "Instance *#{create_instance}* already exists.  Use `aws ops instance ls` to see existing instances.  Newly created instances must have unique hostnames" if instance
 							
-							create_response = opsworks_client.create_instance(stack_id: @@current_stack_id, layer_ids: @@layer_ids, instance_type: 't2.small', hostname: create_instance, os: 'Ubuntu 14.04 LTS', ssh_key_name: 'kevin-jhangiani-soxhub')
+							create_response = opsworks_client.create_instance(stack_id: @@current_stack_id, layer_ids: @@layer_ids, instance_type: 't2.medium', hostname: create_instance, os: 'Ubuntu 14.04 LTS', ssh_key_name: 'kevin-jhangiani-soxhub')
 							
 							send_message client, data.channel, "creating instance *#{create_instance}* on stack *#{@@current_stack}*"
 							send_message client, data.channel, "use `aws ops instance ls` or login to opsworks to view the status of this operation."
