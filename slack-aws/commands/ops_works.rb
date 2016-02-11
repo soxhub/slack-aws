@@ -111,6 +111,12 @@ module SlackAws
             
             when 'status' then
               status_instance = arguments.shift
+              num_results = arguments.shift
+              num_results = "5" if !num_results || num_results.empty?
+              num_results = num_results.to_i
+              num_results = 5 if num_results <= 0
+              num_results = num_results - 1
+
               fail 'Invalid instance name.  Use `aws ops instance ls` to see available instances in stack *#{@@current_stack}*.' unless status_instance
               
               instance_hash = Hash[response.instances.map { |inst| [inst.hostname, inst] }]
@@ -122,7 +128,7 @@ module SlackAws
               
               send_message client, data.channel, "current stack: *#{@@current_stack}*" 
               send_message client, data.channel, "hostname=*#{instance.hostname}*,instance_id=*#{instance.instance_id}*,status=*#{instance.status}*,instance_type=*#{instance.instance_type}*"
-              send_fields client, data.channel, status_response.commands, *[:type, :status, :command_id, :exit_code, :log_url, :created_at, :completed_at].concat(arguments)
+              send_fields client, data.channel, status_response.commands[0..num_results], *[:type, :status, :command_id, :exit_code, :created_at, :completed_at].concat(arguments)
               
             when 'provision' then
               provision_hostname = arguments.shift
