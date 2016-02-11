@@ -154,7 +154,7 @@ module SlackAws
 
             when 'upgrade' then
               upgrade_hostname = arguments.shift
-              fail 'Invalid instance name.  Use `aws ops instance ls` to see available instances in stack *#{@@current_stack}*.' unless provision_hostname
+              fail 'Invalid instance name.  Use `aws ops instance ls` to see available instances in stack *#{@@current_stack}*.' unless upgrade_hostname
               
               instance_hash = Hash[response.instances.map { |instance| [instance.hostname, instance] }]
               instance = instance_hash[upgrade_hostname]
