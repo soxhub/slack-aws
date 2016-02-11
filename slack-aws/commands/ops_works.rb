@@ -81,7 +81,7 @@ module SlackAws
               
             when 'stop' then
               
-              fail 'this poor bot is not permitted to stop instances.  please stop instances directly through aws.'
+              # fail 'this poor bot is not permitted to stop instances.  please stop instances directly through aws.'
               
               stop_instance = arguments.shift
               fail 'Invalid instance name.  Use `aws ops instance ls` to see available instances in stack *#{@@current_stack}*' unless stop_instance
