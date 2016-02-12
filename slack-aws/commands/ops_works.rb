@@ -107,6 +107,7 @@ module SlackAws
               create_response = opsworks_client.create_instance(stack_id: @@current_stack_id, layer_ids: @@layer_ids, instance_type: 't2.medium', hostname: create_instance, os: 'Ubuntu 14.04 LTS', ssh_key_name: 'kevin-jhangiani-soxhub')
               
               send_message client, data.channel, "creating instance *#{create_instance}* on stack *#{@@current_stack}*"
+							send_message client, data.channel, "use `aws ops instance start #{create_instance}` to start this instance."
               send_message client, data.channel, "use `aws ops instance ls` or login to opsworks to view the status of this operation."
               
             when 'delete' then
@@ -117,7 +118,7 @@ module SlackAws
               instance = instance_hash[hostname]
               fail "Invalid instance: #{hostname}.  Use `aws ops instance ls` to see available instances." unless instance
               
-              fail "Failed to delete instance *#{hostname}*.  Instance must be in status *stopped*.  Current Status: *#{instance.status}*" unless instance.status == "stopped"
+              fail "Failed to delete instance *#{hostname}*.  Instance must be in status *stopped*.  Current status: *#{instance.status}*.  Use `aws ops instance stop #{hostname}` to stop this instance first." unless instance.status == "stopped"
               
               response = opsworks_client.delete_instance(instance_id: instance.instance_id)
               
