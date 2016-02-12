@@ -108,6 +108,21 @@ module SlackAws
               
               send_message client, data.channel, "creating instance *#{create_instance}* on stack *#{@@current_stack}*"
               send_message client, data.channel, "use `aws ops instance ls` or login to opsworks to view the status of this operation."
+              
+            when 'delete' then
+              hostname = arguments.shift
+              fail 'Invalid instance name.  Use `aws ops instance ls` to see available instances in stack *#{@@current_stack}*.  Instances must have unique hostnames.' unless hostname
+              
+              instance_hash = Hash[response.instances.map { |instance| [instance.hostname, instance] }]
+              instance = instance_hash[hostname]
+              fail "Invalid instance: #{hostname}.  Use `aws ops instance ls` to see available instances." unless instance
+              
+              fail "Failed to delete instance *#{hostname}*.  Instance must be in status *stopped*.  Current Status: *#{instance.status}*" unless instance.status == "stopped"
+              
+              response = opsworks_client.delete_instance(instance_id: instance.instance_id)
+              
+              send_message client, data.channel, "deleting instance *#{hostname}* from stack *#{@@current_stack}*"
+              send_message client, data.channel, "use `aws ops instance ls` or login to opsworks to view the status of this operation."
             
             when 'status' then
               status_instance = arguments.shift
