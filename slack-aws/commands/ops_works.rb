@@ -206,7 +206,7 @@ module SlackAws
             
             when 'help' then
               send_message client, data.channel, "`aws ops instance <command>`"
-              send_message client, data.channel, "instance commands: `ls`, `start <name>`, `stop <name>`, `status <name>`, `create <name>`, `provision <name> <api_branch|default:live> <client_branch|default:live>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`"
+              send_message client, data.channel, "instance commands: `ls`, `start <name>`, `stop <name>`, `status <name>`, `create <name> <type|default:t2.medium>`, `provision <name> <api_branch|default:live> <client_branch|default:live>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`"
               send_message client, data.channel, "current stack: *#{@@current_stack}*" 
               
           end
