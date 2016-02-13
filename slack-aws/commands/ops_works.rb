@@ -77,7 +77,7 @@ module SlackAws
               
               start_response = opsworks_client.start_instance(instance_id: instance.instance_id)
               send_message client, data.channel, "starting instance *#{instance.hostname}* on stack *#{@@current_stack}*"
-              send_message client, data.channel, "use `aws ops instance ls` or login to opsworks to view the status of this operation."
+              send_message client, data.channel, "use `aws ops instance status #{instance.hostname}` or login to opsworks to view the status of this operation."
               
             when 'stop' then
               
@@ -94,7 +94,7 @@ module SlackAws
               
               start_response = opsworks_client.stop_instance(instance_id: instance.instance_id)
               send_message client, data.channel, "stopping instance *#{instance.hostname}* on stack *#{@@current_stack}*"
-              send_message client, data.channel, "use `aws ops instance ls` or login to opsworks to view the status of this operation."
+              send_message client, data.channel, "use `aws ops instance status #{instance.hostname}` or login to opsworks to view the status of this operation."
               
             when 'create' then
               create_instance = arguments.shift
