@@ -46,9 +46,21 @@ module SlackAws
               fail 'No stack is selected! Select a stack using `aws ops stack use <stack>`.' if @@current_stack.empty?
               send_message client, data.channel, "current stack: *#{@@current_stack}*" 
               
+            when 'ucc' then
+              opsworks_client = Aws::OpsWorks::Client.new;
+              
+              fail 'No stack is selected! Select a stack using `aws ops stack use <stack>`.' if @@current_stack.empty?
+              send_message client, data.channel, "update_custom_cookbooks on stack: *#{@@current_stack}*"
+              
+              instance_ids = opsworks_client.describe_instances(stack_id: @@current_stack_id).instances.map { |ins| ins.instance_id }
+              ucc_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:instance_ids, command: { name: 'update_custom_cookbooks' })
+
+              send_message client, data.channel, "UPDATING COOKBOOKS for STACK!"
+              send_message client, data.channel, "stack: *#{@@current_stack}*"
+              
             when 'help' then
               send_message client, data.channel, "`aws ops stack <command>`"
-              send_message client, data.channel, "stack commands: `ls`,  `use <stack>`,  `cwd`,  `help`"
+              send_message client, data.channel, "stack commands: `ls`, `use <stack>`, `cwd`, `ucc`, `help`"
               
           end
           
@@ -148,6 +160,23 @@ module SlackAws
               send_message client, data.channel, "current stack: *#{@@current_stack}*" 
               send_message client, data.channel, "hostname=*#{instance.hostname}*,instance_id=*#{instance.instance_id}*,status=*#{instance.status}*,instance_type=*#{instance.instance_type}*"
               send_fields client, data.channel, status_response.commands[0..num_results], *[:type, :status, :command_id, :exit_code, :created_at, :completed_at].concat(arguments)
+              
+            when 'ucc' then
+              hostname = arguments.shift
+              fail 'Invalid instance name.  Use `aws ops instance ls` to see available instances in stack *#{@@current_stack}*.' unless hostname
+              
+              instance_hash = Hash[response.instances.map { |instance| [instance.hostname, instance] }]
+              instance = instance_hash[hostname]
+              fail "Instance *#{hostname}* does not exist.  Use `aws ops instance ls` to see existing instances." unless instance
+              
+              commands = opsworks_client.describe_commands(instance_id: instance.instance_id).commands
+              fail "Another command is currently running.  please wait for the prior command to complete before running this operation.  The prior command is in status *#{commands[0].status}*" if commands.size && commands[0].status != "successful" && commands[0].status != "failed"
+              
+              ucc_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:[instance.instance_id], command: { name: 'update_custom_cookbooks' })
+
+              send_message client, data.channel, "UPDATING COOKBOOKS!"
+              send_message client, data.channel, "instance: *#{provision_hostname}*, stack: *#{@@current_stack}*"
+              send_message client, data.channel, "use `aws ops instance status #{provision_hostname}` or login to opsworks to view the status of this operation."
               
             when 'provision' then
               provision_hostname = arguments.shift
@@ -252,7 +281,7 @@ module SlackAws
             when 'help' then
               send_message client, data.channel, "`aws ops instance <command>`"
               send_message client, data.channel, "instance commands: `ls`, `start <name>`, `stop <name>`, `status <name>`, `create <name> <type|default:t2.medium>`"
-              send_message client, data.channel, "instance recipes: `provision <name> <api_branch|default:live> <client_branch|default:live>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`, `clonedb <name> <from_stack>:<from_instance>`, `emptydb <name>`"
+              send_message client, data.channel, "instance recipes: `ucc <name>`, `provision <name> <api_branch|default:live> <client_branch|default:live>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`, `clonedb <name> <from_stack>:<from_instance>`, `emptydb <name>`"
               send_message client, data.channel, "current stack: *#{@@current_stack}*" 
               
           end
