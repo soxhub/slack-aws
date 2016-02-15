@@ -227,7 +227,7 @@ module SlackAws
               
               upgrade_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:[instance.instance_id], command: { name: 'execute_recipes', args: { recipes: ["soxhub::clone_db"] }}, custom_json:"{\"soxhub\": { \"clone_db\": { \"instances\": { \"#{hostname}\": true }, \"from\": { \"stack\": \"#{from_stack}\", \"instance\":\"#{from_instance}\" } }}}")
               
-              send_message client, data.channel, "CLONING DB FROM: stack: `#{api_branch}`, client: `#{client_branch}`"
+              send_message client, data.channel, "CLONING DB FROM: stack: `#{from_stack}`, client: `#{from_instance}`"
               send_message client, data.channel, "instance: *#{hostname}*, stack: *#{@@current_stack}*"
               send_message client, data.channel, "use `aws ops instance status #{hostname}` or login to opsworks to view the status of this operation."
             
