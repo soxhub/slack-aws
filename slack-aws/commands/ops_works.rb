@@ -225,16 +225,34 @@ module SlackAws
               fail "<from_instance> cannot be empty. Use syntax `<stack>:<instance>` to specify which instance to clone from." if !from_instance || from_instance.empty?
               
               
-              upgrade_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:[instance.instance_id], command: { name: 'execute_recipes', args: { recipes: ["soxhub::clone_db"] }}, custom_json:"{\"soxhub\": { \"clone_db\": { \"instances\": { \"#{hostname}\": true }, \"from\": { \"stack\": \"#{from_stack}\", \"instance\":\"#{from_instance}\" } }}}")
+              clone_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:[instance.instance_id], command: { name: 'execute_recipes', args: { recipes: ["soxhub::clone_db"] }}, custom_json:"{\"soxhub\": { \"clone_db\": { \"instances\": { \"#{hostname}\": true }, \"from\": { \"stack\": \"#{from_stack}\", \"instance\":\"#{from_instance}\" } }}}")
               
-              send_message client, data.channel, "CLONING DB FROM: stack: `#{from_stack}`, client: `#{from_instance}`"
+              send_message client, data.channel, "CLONING DB FROM: stack: `#{from_stack}`, instance: `#{from_instance}`"
+              send_message client, data.channel, "instance: *#{hostname}*, stack: *#{@@current_stack}*"
+              send_message client, data.channel, "use `aws ops instance status #{hostname}` or login to opsworks to view the status of this operation."
+              
+            # @TODO: this fn needs additional checks
+            when 'emptydb' then
+              hostname = arguments.shift
+              fail 'Invalid instance name.  Use `aws ops instance ls` to see available instances in stack *#{@@current_stack}*.' unless hostname
+              
+              instance_hash = Hash[response.instances.map { |instance| [instance.hostname, instance] }]
+              instance = instance_hash[hostname]
+              fail "Instance *#{hostname}* does not exist.  Use `aws ops instance ls` to see existing instances." unless instance
+              
+              commands = opsworks_client.describe_commands(instance_id: instance.instance_id).commands
+              fail "another command is currently running.  please wait for the prior command to complete before upgrading.  the prior command is in status *#{commands[0].status}*" if commands.size && commands[0].status != "successful" && commands[0].status != "failed"
+              
+              empty_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:[instance.instance_id], command: { name: 'execute_recipes', args: { recipes: ["soxhub::empty_db"] }}, custom_json:"{\"soxhub\": { \"empty_db\": { \"instances\": { \"#{hostname}\": true } }}}")
+              
+              send_message client, data.channel, "EMPTY DB operation started!"
               send_message client, data.channel, "instance: *#{hostname}*, stack: *#{@@current_stack}*"
               send_message client, data.channel, "use `aws ops instance status #{hostname}` or login to opsworks to view the status of this operation."
             
             when 'help' then
               send_message client, data.channel, "`aws ops instance <command>`"
               send_message client, data.channel, "instance commands: `ls`, `start <name>`, `stop <name>`, `status <name>`, `create <name> <type|default:t2.medium>`"
-              send_message client, data.channel, "instance recipes: `provision <name> <api_branch|default:live> <client_branch|default:live>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`, `clonedb <name> <from_stack>:<from_instance>`"
+              send_message client, data.channel, "instance recipes: `provision <name> <api_branch|default:live> <client_branch|default:live>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`, `clonedb <name> <from_stack>:<from_instance>`, `emptydb <name>`"
               send_message client, data.channel, "current stack: *#{@@current_stack}*" 
               
           end
