@@ -217,10 +217,12 @@ module SlackAws
               fail "another command is currently running.  please wait for the prior command to complete before upgrading.  the prior command is in status *#{commands[0].status}*" if commands.size && commands[0].status != "successful" && commands[0].status != "failed"
               
               from_stack = arguments.shift
-              fail "from_stack cannot be empty" if !from_stack || from_stack.empty?
+              fail "<from> cannot be empty.  Use syntax `<stack>:<instance>` to specify which instance to clone from." if !from_stack || from_stack.empty?
               
-              from_instance = arguments.shift
-              fail "from_instance cannot be empty" if !from_instance || from_instance.empty?
+              from_stack, from_instance = from_stack.split(':', 2)
+              
+              fail "<from_stack> cannot be empty. Use syntax `<stack>:<instance>` to specify which instance to clone from." if !from_stack || from_stack.empty?
+              fail "<from_instance> cannot be empty. Use syntax `<stack>:<instance>` to specify which instance to clone from." if !from_instance || from_instance.empty?
               
               
               upgrade_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:[instance.instance_id], command: { name: 'execute_recipes', args: { recipes: ["soxhub::clone_db"] }}, custom_json:"{\"soxhub\": { \"clone_db\": { \"instances\": { \"#{hostname}\": true }, \"from\": { \"stack\": \"#{from_stack}\", \"instance\":\"#{from_instance}\" } }}}")
@@ -232,7 +234,7 @@ module SlackAws
             when 'help' then
               send_message client, data.channel, "`aws ops instance <command>`"
               send_message client, data.channel, "instance commands: `ls`, `start <name>`, `stop <name>`, `status <name>`, `create <name> <type|default:t2.medium>`"
-              send_message client, data.channel, "instance recipes: `provision <name> <api_branch|default:live> <client_branch|default:live>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`, `clonedb <name> <from_stack> <from_instance>`"
+              send_message client, data.channel, "instance recipes: `provision <name> <api_branch|default:live> <client_branch|default:live>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`, `clonedb <name> <from_stack>:<from_instance>`"
               send_message client, data.channel, "current stack: *#{@@current_stack}*" 
               
           end
