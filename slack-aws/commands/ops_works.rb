@@ -175,8 +175,8 @@ module SlackAws
               ucc_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:[instance.instance_id], command: { name: 'update_custom_cookbooks' })
 
               send_message client, data.channel, "UPDATING COOKBOOKS!"
-              send_message client, data.channel, "instance: *#{provision_hostname}*, stack: *#{@@current_stack}*"
-              send_message client, data.channel, "use `aws ops instance status #{provision_hostname}` or login to opsworks to view the status of this operation."
+              send_message client, data.channel, "instance: *#{hostname}*, stack: *#{@@current_stack}*"
+              send_message client, data.channel, "use `aws ops instance status #{hostname}` or login to opsworks to view the status of this operation."
               
             when 'provision' then
               provision_hostname = arguments.shift
