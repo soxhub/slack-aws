@@ -117,7 +117,7 @@ module SlackAws
               fail "Instance *#{create_instance}* already exists.  Use `aws ops instance ls` to see existing instances.  Newly created instances must have unique hostnames" if instance
 
               instance_type = arguments.shift
-              instance_type = "t2.medium" if !instance_type || instance_type.empty?
+              instance_type = "t2.small" if !instance_type || instance_type.empty?
               
               create_response = opsworks_client.create_instance(stack_id: @@current_stack_id, layer_ids: @@layer_ids, instance_type: instance_type, hostname: create_instance, os: 'Ubuntu 14.04 LTS', ssh_key_name: 'kevin-jhangiani-soxhub')
               
@@ -280,7 +280,7 @@ module SlackAws
             
             when 'help' then
               send_message client, data.channel, "`aws ops instance <command>`"
-              send_message client, data.channel, "instance commands: `ls`, `start <name>`, `stop <name>`, `status <name>`, `create <name> <type|default:t2.medium>`"
+              send_message client, data.channel, "instance commands: `ls`, `start <name>`, `stop <name>`, `status <name>`, `create <name> <type|default:t2.small>`"
               send_message client, data.channel, "instance recipes: `ucc <name>`, `provision <name> <api_branch|default:live> <client_branch|default:live>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`, `clonedb <name> <from_stack>:<from_instance>`, `emptydb <name>`"
               send_message client, data.channel, "current stack: *#{@@current_stack}*" 
               
