@@ -288,7 +288,7 @@ module SlackAws
           
           
         else
-          send_message client, data.channel, 'Syntax: aws opsworks [command], need `aws help`?'
+          send_message client, data.channel, 'Syntax: aws ops [command], need `aws ops help`?'
         end
       end
     end
