@@ -12,7 +12,7 @@ module SlackAws
           @@current_stack_id = ""
           
         when 'help' then
-          send_message client, data.channel, "use `aws ops stack help` for help with stack commands, and `aws ops instance help` for help with instance commands."
+          send_message client, data.channel, 'Use `aws ops instance help` to view instance commands or `aws ops stack help` to view stack commands.'
 
         when 'stack' then
           @@stacks = Aws::OpsWorks::Client.new.describe_stacks
