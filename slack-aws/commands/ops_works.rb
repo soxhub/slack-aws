@@ -75,7 +75,7 @@ module SlackAws
           
           case instance_cmd
             when 'ls' then
-              send_fields client, data.channel, response.instances, *[:hostname, :instance_id, :instance_type, :status, :public_dns, :created_at].concat(arguments)
+              send_fields client, data.channel, response.instances, *[:hostname, :instance_type, :status, :created_at, :instance_id].concat(arguments)
           
             when 'start' then
               start_instance = arguments.shift
@@ -280,7 +280,7 @@ module SlackAws
             
             when 'help' then
               send_message client, data.channel, "`aws ops instance <command>`"
-              send_message client, data.channel, "instance commands: `ls`, `start <name>`, `stop <name>`, `status <name>`, `create <name> <type|default:t2.small>`"
+              send_message client, data.channel, "instance commands: `ls`, `start <name>`, `stop <name>`, `status <name>`, `create <name> <type|default:t2.small>`,  `delete <name>`"
               send_message client, data.channel, "instance recipes: `ucc <name>`, `provision <name> <api_branch|default:live> <client_branch|default:live>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`, `clonedb <name> <from_stack>:<from_instance>`, `emptydb <name>`"
               send_message client, data.channel, "current stack: *#{@@current_stack}*" 
               
