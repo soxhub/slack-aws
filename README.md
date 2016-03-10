@@ -1,23 +1,22 @@
-SlackAws
+SlackAws - SoxHub
 ========
-
-[![Build Status](https://travis-ci.org/dblock/slack-aws.png)](https://travis-ci.org/dblock/slack-aws)
 
 Slack bot for AWS.
 
 ## Installation
 
-See [DEPLOYMENT](DEPLOYMENT.md).
+Run the following commands to initialize and start the bot:
+
+```
+sudo gem install bundler
+bundle install
+export AWS_ACCESS_KEY_ID=YOUR-ACCESS-KEY
+export SLACK_API_TOKEN=YOUR-SLACK-BOT-API-TOKEN
+bundle exec puma -p 8000
+```
+
 
 ## Commands
-
-### aws
-
-Shows bot version and links.
-
-### aws hi
-
-Politely says 'hi' back.
 
 ### aws help
 
@@ -30,16 +29,14 @@ Get help.
 
 ### aws opsworks
 
-* `aws opsworks stacks`: Lists OpsWorks stacks.
-* `aws opsworks apps [stack]`: Lists apps for a given stack.
-* `aws opsworks instances [stack]`: Lists instances for a given stack.
+* `aws ops stack help`: Lists stack commands.
+* `aws ops instance help`: Lists instance commands.
 
-## Contributing
-
-See [CONTRIBUTING](CONTRIBUTING.md).
 
 ## Copyright and License
 
-Copyright (c) 2015, Daniel Doubrovkine, Artsy and [Contributors](CHANGELOG.md).
+Copyright (c) 2016, Kevin Jhangiani
+
+Forked from original work by Daniel Doubrovkine, Artsy and [Contributors](CHANGELOG.md).
 
 This project is licensed under the [MIT License](LICENSE.md).
