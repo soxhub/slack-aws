@@ -277,11 +277,28 @@ module SlackAws
               send_message client, data.channel, "EMPTY DB operation started!"
               send_message client, data.channel, "instance: *#{hostname}*, stack: *#{@@current_stack}*"
               send_message client, data.channel, "use `aws ops instance status #{hostname}` or login to opsworks to view the status of this operation."
+              
+            when 'grantdb' then
+              hostname = arguments.shift
+              fail 'Invalid instance name.  Use `aws ops instance ls` to see available instances in stack *#{@@current_stack}*.' unless hostname
+              
+              instance_hash = Hash[response.instances.map { |instance| [instance.hostname, instance] }]
+              instance = instance_hash[hostname]
+              fail "Instance *#{hostname}* does not exist.  Use `aws ops instance ls` to see existing instances." unless instance
+              
+              commands = opsworks_client.describe_commands(instance_id: instance.instance_id).commands
+              fail "another command is currently running.  please wait for the prior command to complete before upgrading.  the prior command is in status *#{commands[0].status}*" if commands.size && commands[0].status != "successful" && commands[0].status != "failed"
+              
+              grant_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:[instance.instance_id], command: { name: 'execute_recipes', args: { recipes: ["soxhub::grant_db"] }}, custom_json:"{\"soxhub\": { \"grant_db\": { \"instances\": { \"#{hostname}\": true } }}}")
+              
+              send_message client, data.channel, "GRANT DB operation started!"
+              send_message client, data.channel, "instance: *#{hostname}*, stack: *#{@@current_stack}*"
+              send_message client, data.channel, "use `aws ops instance status #{hostname}` or login to opsworks to view the status of this operation."
             
             when 'help' then
               send_message client, data.channel, "`aws ops instance <command>`"
               send_message client, data.channel, "instance commands: `ls`, `start <name>`, `stop <name>`, `status <name>`, `create <name> <type|default:t2.small>`,  `delete <name>`"
-              send_message client, data.channel, "instance recipes: `ucc <name>`, `provision <name> <api_branch|default:live> <client_branch|default:live>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`, `clonedb <name> <from_stack>:<from_instance>`, `emptydb <name>`"
+              send_message client, data.channel, "instance recipes: `ucc <name>`, `provision <name> <api_branch|default:live> <client_branch|default:live>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`, `clonedb <name> <from_stack>:<from_instance>`, `emptydb <name>`, `grantdb <name>`"
               send_message client, data.channel, "current stack: *#{@@current_stack}*" 
               
           end
