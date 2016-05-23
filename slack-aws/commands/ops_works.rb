@@ -158,7 +158,7 @@ module SlackAws
               
               
               send_message client, data.channel, "current stack: *#{@@current_stack}*" 
-              send_message client, data.channel, "hostname=*#{instance.hostname}*,instance_id=*#{instance.instance_id}*,status=*#{instance.status}*,instance_type=*#{instance.instance_type}*"
+              send_message client, data.channel, "hostname=*#{instance.hostname}*,private_ip=*#{instance.private_ip}*,public_ip=*#{instance.public_ip}*,instance_id=*#{instance.instance_id}*,status=*#{instance.status}*,instance_type=*#{instance.instance_type}*"
               send_fields client, data.channel, status_response.commands[0..num_results], *[:type, :status, :command_id, :exit_code, :created_at, :completed_at].concat(arguments)
               
             when 'ucc' then
