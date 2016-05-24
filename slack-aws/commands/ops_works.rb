@@ -119,9 +119,12 @@ module SlackAws
               instance_type = arguments.shift
               instance_type = "t2.small" if !instance_type || instance_type.empty?
               
-              create_response = opsworks_client.create_instance(stack_id: @@current_stack_id, layer_ids: @@layer_ids, instance_type: instance_type, hostname: create_instance, os: 'Ubuntu 14.04 LTS', ssh_key_name: 'kevin-jhangiani-soxhub')
+              az = arguments.shift
+              az = "us-west-2b" if !az || az.empty?
               
-              send_message client, data.channel, "creating instance *#{create_instance}* on stack *#{@@current_stack}* with type *#{instance_type}*"
+              create_response = opsworks_client.create_instance(stack_id: @@current_stack_id, layer_ids: @@layer_ids, instance_type: instance_type, availability_zone: az, hostname: create_instance, os: 'Ubuntu 14.04 LTS', ssh_key_name: 'kevin-jhangiani-soxhub')
+              
+              send_message client, data.channel, "creating instance *#{create_instance}* on stack *#{@@current_stack}* with type *#{instance_type}* in zone *#{az}*"
               send_message client, data.channel, "use `aws ops instance start #{create_instance}` to start this instance."
               send_message client, data.channel, "use `aws ops instance ls` or login to opsworks to view the status of this operation."
               
@@ -297,7 +300,7 @@ module SlackAws
             
             when 'help' then
               send_message client, data.channel, "`aws ops instance <command>`"
-              send_message client, data.channel, "instance commands: `ls`, `start <name>`, `stop <name>`, `status <name>`, `create <name> <type|default:t2.small>`,  `delete <name>`"
+              send_message client, data.channel, "instance commands: `ls`, `start <name>`, `stop <name>`, `status <name>`, `create <name> <type|default:t2.small> <availability_zone|default:us-west-2b>`,  `delete <name>`"
               send_message client, data.channel, "instance recipes: `ucc <name>`, `provision <name> <api_branch|default:live> <client_branch|default:live>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`, `clonedb <name> <from_stack>:<from_instance>`, `emptydb <name>`, `grantdb <name>`"
               send_message client, data.channel, "current stack: *#{@@current_stack}*" 
               
