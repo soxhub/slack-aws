@@ -325,7 +325,7 @@ module SlackAws
               fail "another command is currently running.  please wait for the prior command to complete before restoring.  the prior command is in status *#{commands[0].status}*" if commands.size && commands[0].status != "successful" && commands[0].status != "failed"
               
               sql_file = arguments.shift
-              fail "<sql_file> cannot be empty.  Please specify an sql file that exists on this instance in the `soxhub-database` directory."
+              fail "<sql_file> cannot be empty.  Please specify an sql file that exists on this instance in the `soxhub-database` directory." if !sql_file || sql_file.empty?
               
               db_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:[instance.instance_id], command: { name: 'execute_recipes', args: { recipes: ["soxhub::restore_db"] }}, custom_json:"{\"soxhub\": { \"restore_db\": { \"instances\": { \"#{hostname}\": true }, \"sql_file\": \"#{sql_file}\" }}}")
               
