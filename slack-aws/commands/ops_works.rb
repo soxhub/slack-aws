@@ -75,8 +75,13 @@ module SlackAws
           
           case instance_cmd
             when 'ls' then
-              send_fields client, data.channel, response.instances, *[:hostname, :instance_type, :status, :created_at, :instance_id].concat(arguments)
-          
+              send_fields client, data.channel, response.instances, *[:hostname, :instance_type, :status, :private_ip, :created_at, :instance_id].concat(arguments)
+            
+            when 'hosts' then
+              hosts = response.instances.map { |inst| "#{inst.private_ip} #{inst.hostname}.soxhub.internal" if inst.private_ip }.compact
+              
+              send_message client, data.channel, hosts.join("\n")
+
             when 'start' then
               start_instance = arguments.shift
               fail 'Invalid instance name.  Use `aws ops instance ls` to see available instances in stack *#{@@current_stack}*' unless start_instance
@@ -181,7 +186,7 @@ module SlackAws
               send_message client, data.channel, "instance: *#{hostname}*, stack: *#{@@current_stack}*"
               send_message client, data.channel, "use `aws ops instance status #{hostname}` or login to opsworks to view the status of this operation."
               
-            when 'provision' then
+            when 'provisiondev' then
               provision_hostname = arguments.shift
               fail 'Invalid instance name.  Use `aws ops instance ls` to see available instances in stack *#{@@current_stack}*.' unless provision_hostname
               
@@ -207,6 +212,51 @@ module SlackAws
               
               send_message client, data.channel, "DEPLOYING APP! api: `#{api_branch}` client: `#{client_branch}`"
               send_message client, data.channel, "instance: *#{provision_hostname}*, stack: *#{@@current_stack}*"
+              send_message client, data.channel, "use `aws ops instance status #{provision_hostname}` or login to opsworks to view the status of this operation."
+              
+            when 'provision' then
+              provision_hostname = arguments.shift
+              fail 'Invalid instance name.  Use `aws ops instance ls` to see available instances in stack *#{@@current_stack}*.' unless provision_hostname
+              
+              instance_hash = Hash[response.instances.map { |instance| [instance.hostname, instance] }]
+              instance = instance_hash[provision_hostname]
+              fail "Instance *#{provision_hostname}* does not exist.  Use `aws ops instance ls` to see existing instances." unless instance
+              
+              commands = opsworks_client.describe_commands(instance_id: instance.instance_id).commands
+              fail "another command is currently running.  please wait for the prior command to complete before provisioning.  the prior command is in status *#{commands[0].status}*" if commands.size && commands[0].status != "successful" && commands[0].status != "failed"
+              
+              api_branch = arguments.shift
+              api_branch = "live" if !api_branch || api_branch.empty?
+              
+              client_branch = arguments.shift
+              client_branch = "live" if !client_branch || client_branch.empty?
+              
+              fail "api branch cannot be empty" if !api_branch || api_branch.empty?
+              fail "client branch cannot be empty" if !client_branch || client_branch.empty?
+              
+              from_stack = arguments.shift
+              fail "<from> cannot be empty.  Use syntax `<stack>:<instance>` to specify which instance to clone from, or `empty` to provision with an empty db." if !from_stack || from_stack.empty?
+              
+              from_stack, from_instance = from_stack.split(':', 2)
+              
+              fail "<from_stack> cannot be empty. Use syntax `<stack>:<instance>` to specify which instance to clone from." if !from_stack || from_stack.empty?
+              
+              if from_stack == "empty"
+                deploy_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:[instance.instance_id], command: { name: 'execute_recipes', args: { recipes: ["soxhub::provision","soxhub::empty_db"] }}, custom_json:"{\"soxhub\": { \"provision\": { \"instances\": { \"#{provision_hostname}\": true },\"api_branch\": \"#{api_branch}\",\"client_branch\": \"#{client_branch}\"}, \"empty_db\": { \"instances\": { \"#{provision_hostname}\": true } }}}")
+              
+                send_message client, data.channel, "DEPLOYING APP! api: `#{api_branch}` client: `#{client_branch}`, db: `emptydb`"
+                send_message client, data.channel, "instance: *#{provision_hostname}*, stack: *#{@@current_stack}*"
+              else 
+                fail "<from_instance> cannot be empty. Use syntax `<stack>:<instance>` to specify which instance to clone from." if !from_instance || from_instance.empty?
+                
+                deploy_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:[instance.instance_id], command: { name: 'execute_recipes', args: { recipes: ["soxhub::provision","soxhub::clone_db"] }}, custom_json:"{\"soxhub\": { \"provision\": { \"instances\": { \"#{provision_hostname}\": true },\"api_branch\": \"#{api_branch}\",\"client_branch\": \"#{client_branch}\"}, \"clone_db\": { \"instances\": { \"#{provision_hostname}\": true }, \"from\": { \"stack\": \"#{from_stack}\", \"instance\":\"#{from_instance}\" } }}}")
+              
+                send_message client, data.channel, "DEPLOYING APP! api: `#{api_branch}` client: `#{client_branch}`, db: `clonedb`"
+                send_message client, data.channel, "CLONING DB FROM: stack: `#{from_stack}`, instance: `#{from_instance}`"
+                send_message client, data.channel, "instance: *#{provision_hostname}*, stack: *#{@@current_stack}*"
+              end
+              
+              
               send_message client, data.channel, "use `aws ops instance status #{provision_hostname}` or login to opsworks to view the status of this operation."
 
             when 'upgrade' then
@@ -300,8 +350,8 @@ module SlackAws
             
             when 'help' then
               send_message client, data.channel, "`aws ops instance <command>`"
-              send_message client, data.channel, "instance commands: `ls`, `start <name>`, `stop <name>`, `status <name>`, `create <name> <type|default:t2.small> <availability_zone|default:us-west-2b>`,  `delete <name>`"
-              send_message client, data.channel, "instance recipes: `ucc <name>`, `provision <name> <api_branch|default:live> <client_branch|default:live>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`, `clonedb <name> <from_stack>:<from_instance>`, `emptydb <name>`, `grantdb <name>`"
+              send_message client, data.channel, "instance commands: `ls`, `hosts`, `start <name>`, `stop <name>`, `status <name>`, `create <name> <type|default:t2.small> <availability_zone|default:us-west-2b>`,  `delete <name>`"
+              send_message client, data.channel, "instance recipes: `ucc <name>`, `provision <name> <api_branch|default:live> <client_branch|default:live> <from_stack>:<from_instance>`, `provisiondev <name> <api_branch|default:live> <client_branch|default:live>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`, `clonedb <name> <from_stack>:<from_instance>`, `emptydb <name>`, `grantdb <name>`"
               send_message client, data.channel, "current stack: *#{@@current_stack}*" 
               
           end
