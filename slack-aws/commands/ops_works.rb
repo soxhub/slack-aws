@@ -235,20 +235,19 @@ module SlackAws
               fail "client branch cannot be empty" if !client_branch || client_branch.empty?
               
               from_stack = arguments.shift
-              fail "<from> cannot be empty.  Use syntax `<stack>:<instance>` to specify which instance to clone from, or `empty` to provision with an empty db." if !from_stack || from_stack.empty?
+              fail "<from> cannot be empty.  Use syntax `<stack>:<instance>` to specify which instance to clone from, or `empty:empty` to provision with an empty db." if !from_stack || from_stack.empty?
               
               from_stack, from_instance = from_stack.split(':', 2)
               
               fail "<from_stack> cannot be empty. Use syntax `<stack>:<instance>` to specify which instance to clone from." if !from_stack || from_stack.empty?
+              fail "<from_instance> cannot be empty. Use syntax `<stack>:<instance>` to specify which instance to clone from." if !from_instance || from_instance.empty?
               
-              if from_stack == "empty"
+              if from_stack == "empty" and from_instance == "empty"
                 deploy_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:[instance.instance_id], command: { name: 'execute_recipes', args: { recipes: ["soxhub::provision","soxhub::empty_db"] }}, custom_json:"{\"soxhub\": { \"provision\": { \"instances\": { \"#{provision_hostname}\": true },\"api_branch\": \"#{api_branch}\",\"client_branch\": \"#{client_branch}\"}, \"empty_db\": { \"instances\": { \"#{provision_hostname}\": true } }}}")
               
                 send_message client, data.channel, "DEPLOYING APP! api: `#{api_branch}` client: `#{client_branch}`, db: `emptydb`"
                 send_message client, data.channel, "instance: *#{provision_hostname}*, stack: *#{@@current_stack}*"
-              else 
-                fail "<from_instance> cannot be empty. Use syntax `<stack>:<instance>` to specify which instance to clone from." if !from_instance || from_instance.empty?
-                
+              else
                 deploy_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:[instance.instance_id], command: { name: 'execute_recipes', args: { recipes: ["soxhub::provision","soxhub::clone_db"] }}, custom_json:"{\"soxhub\": { \"provision\": { \"instances\": { \"#{provision_hostname}\": true },\"api_branch\": \"#{api_branch}\",\"client_branch\": \"#{client_branch}\"}, \"clone_db\": { \"instances\": { \"#{provision_hostname}\": true }, \"from\": { \"stack\": \"#{from_stack}\", \"instance\":\"#{from_instance}\" } }}}")
               
                 send_message client, data.channel, "DEPLOYING APP! api: `#{api_branch}` client: `#{client_branch}`, db: `clonedb`"
@@ -351,7 +350,8 @@ module SlackAws
             when 'help' then
               send_message client, data.channel, "`aws ops instance <command>`"
               send_message client, data.channel, "instance commands: `ls`, `hosts`, `start <name>`, `stop <name>`, `status <name>`, `create <name> <type|default:t2.small> <availability_zone|default:us-west-2b>`,  `delete <name>`"
-              send_message client, data.channel, "instance recipes: `ucc <name>`, `provision <name> <api_branch|default:live> <client_branch|default:live> <from_stack>:<from_instance>`, `provisiondev <name> <api_branch|default:live> <client_branch|default:live>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`, `clonedb <name> <from_stack>:<from_instance>`, `emptydb <name>`, `grantdb <name>`"
+              send_message client, data.channel, "provision recipes: `provision <name> <api_branch> <client_branch> <from_stack>:<from_instance>`, `provision <name> <api_branch> <client_branch> empty:empty`, `provisiondev <name> <api_branch|default:live> <client_branch|default:live>`"
+              send_message client, data.channel, "additional recipes: `ucc <name>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`, `clonedb <name> <from_stack>:<from_instance>`, `emptydb <name>`, `grantdb <name>`"
               send_message client, data.channel, "current stack: *#{@@current_stack}*" 
               
           end
