@@ -75,7 +75,11 @@ module SlackAws
 
           case instance_cmd
             when 'ls' then
-              send_fields client, data.channel, response.instances, *[:hostname, :instance_type, :status, :private_ip, :created_at, :instance_id].concat(arguments)
+              send_fields client, data.channel, response.instances, *[:hostname, :instance_type, :status, :private_ip, :availability_zone, :created_at, :instance_id].concat(arguments)
+
+              #ls = response.instances.map { |inst| "*#{inst.hostname}*: *`#{inst.status}`* - `#{inst.private_ip}` - `#{inst.instance_type}` - `#{inst.availability_zone}` (_#{inst.instance_id}_)" }.compact
+
+              #send_message client, data.channel, ls.join("\n")
 
             when 'hosts' then
               hosts = response.instances.map { |inst| "#{inst.private_ip} #{inst.hostname}.soxhub.internal" if inst.private_ip }.compact
@@ -386,9 +390,15 @@ module SlackAws
               commands = opsworks_client.describe_commands(instance_id: instance.instance_id).commands
               fail "another command is currently running.  please wait for the prior command to complete before backing up.  the prior command is in status *#{commands[0].status}*" if commands.size && commands[0].status != "successful" && commands[0].status != "failed"
 
-              db_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:[instance.instance_id], command: { name: 'execute_recipes', args: { recipes: ["soxhub::backup_db"] }}, custom_json:"{\"soxhub\": { \"backup_db\": { \"instances\": { \"#{hostname}\": true } }}}")
+              sql_file = arguments.shift
+              sql_file = "" if !sql_file || sql_file.empty?
+
+              db_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:[instance.instance_id], command: { name: 'execute_recipes', args: { recipes: ["soxhub::backup_db"] }}, custom_json:"{\"soxhub\": { \"backup_db\": { \"sql_file\": \"#{sql_file}\", \"instances\": { \"#{hostname}\": true } }}}")
 
               send_message client, data.channel, "BACKUP DB operation started!"
+              if !sql_file.empty?
+                send_message client, data.channel, "BACKUP DB TO FILE: `#{sql_file}`"
+              end
               send_message client, data.channel, "instance: *#{hostname}*, stack: *#{@@current_stack}*"
               send_message client, data.channel, "use `aws ops instance status #{hostname}` or login to opsworks to view the status of this operation."
 
@@ -413,7 +423,7 @@ module SlackAws
               send_message client, data.channel, "`aws ops instance <command>`"
               send_message client, data.channel, "instance commands: `ls`, `hosts`, `start <name>`, `stop <name>`, `status <name>`, `create <name> <type|default:t2.small> <availability_zone|default:us-west-2b>`,  `delete <name>`"
               send_message client, data.channel, "provision recipes: `provision <name> <api_branch> <client_branch> <from_stack>:<from_instance>`, `provision <name> <api_branch> <client_branch> empty:empty`, `provisiondev <name> <api_branch|default:live> <client_branch|default:live>`"
-              send_message client, data.channel, "additional recipes: `ucc <name>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`, `clonedb <name> <from_stack>:<from_instance>`, `backupdb <name>`, `restoredb <name> <sql_file>`, `legacyemptydb <name>`, `emptydb <name>`, `grantdb <name>`"
+              send_message client, data.channel, "additional recipes: `ucc <name>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`, `clonedb <name> <from_stack>:<from_instance>`, `backupdb <name> <sql_file|default:auto-generated>`, `restoredb <name> <sql_file>`, `legacyemptydb <name>`, `emptydb <name>`, `grantdb <name>`"
               send_message client, data.channel, "current stack: *#{@@current_stack}*"
 
           end
