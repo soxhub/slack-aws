@@ -421,9 +421,9 @@ module SlackAws
 
             when 'help' then
               send_message client, data.channel, "`aws ops instance <command>`"
-              send_message client, data.channel, "instance commands: `ls`, `hosts`, `start <name>`, `stop <name>`, `status <name>`, `create <name> <type|default:t2.small> <availability_zone|default:us-west-2b>`,  `delete <name>`"
-              send_message client, data.channel, "provision recipes: `provision <name> <api_branch> <client_branch> <from_stack>:<from_instance>`, `provision <name> <api_branch> <client_branch> empty:empty`, `provisiondev <name> <api_branch|default:live> <client_branch|default:live>`"
-              send_message client, data.channel, "additional recipes: `ucc <name>`, `upgrade <name> <api_branch|default:live> <client_branch|default:live>`, `clonedb <name> <from_stack>:<from_instance>`, `backupdb <name> <sql_file|default:auto-generated>`, `restoredb <name> <sql_file>`, `legacyemptydb <name>`, `emptydb <name>`, `grantdb <name>`"
+              send_message client, data.channel, "instance commands: `ls`, `hosts`, `start <name>`, `stop <name>`, `status <name>`, `create <name> <type[default:t2.small]> <availability_zone[default:us-west-2b]>`,  `delete <name>`"
+              send_message client, data.channel, "provision recipes: `provision <name> <api_branch> <client_branch> <from_stack>:<from_instance>`, `provision <name> <api_branch> <client_branch> empty:empty`, `provisiondev <name> <api_branch[default:live]> <client_branch[default:live]>`"
+              send_message client, data.channel, "additional recipes: `ucc <name>`, `upgrade <name> <api_branch[default:live]> <client_branch[default:live]>`, `clonedb <name> <from_stack>:<from_instance>`, `backupdb <name> <sql_file[default:auto-generated]>`, `restoredb <name> <sql_file>`, `legacyemptydb <name>`, `emptydb <name>`, `grantdb <name>`"
               send_message client, data.channel, "current stack: *#{@@current_stack}*"
 
           end
