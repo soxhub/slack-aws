@@ -258,6 +258,12 @@ module SlackAws
                 send_message client, data.channel, "DEPLOYING APP! api: `#{api_branch}` client: `#{client_branch}`, db: `legacyemptydb`"
                 send_message client, data.channel, "instance: *#{provision_hostname}*, stack: *#{@@current_stack}*"
 
+              elsif from_stack == "@file"
+                deploy_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:[instance.instance_id], command: { name: 'execute_recipes', args: { recipes: ["soxhub::provision","soxhub::restore_db"] }}, custom_json:"{\"soxhub\": { \"provision\": { \"instances\": { \"#{provision_hostname}\": true },\"api_branch\": \"#{api_branch}\",\"client_branch\": \"#{client_branch}\"}, \"restore_db\": { \"instances\": { \"#{provision_hostname}\": true }, \"sql_file\": \"#{from_instance}\" }}}")
+
+                send_message client, data.channel, "DEPLOYING APP! api: `#{api_branch}` client: `#{client_branch}`, db: `legacyemptydb`"
+                send_message client, data.channel, "instance: *#{provision_hostname}*, stack: *#{@@current_stack}*"
+
               else
                 deploy_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:[instance.instance_id], command: { name: 'execute_recipes', args: { recipes: ["soxhub::provision","soxhub::clone_db"] }}, custom_json:"{\"soxhub\": { \"provision\": { \"instances\": { \"#{provision_hostname}\": true },\"api_branch\": \"#{api_branch}\",\"client_branch\": \"#{client_branch}\"}, \"clone_db\": { \"instances\": { \"#{provision_hostname}\": true }, \"from\": { \"stack\": \"#{from_stack}\", \"instance\":\"#{from_instance}\" } }}}")
 
