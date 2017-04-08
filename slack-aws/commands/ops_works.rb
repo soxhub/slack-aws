@@ -75,7 +75,9 @@ module SlackAws
 
           case instance_cmd
             when 'ls' then
-              send_fields client, data.channel, response.instances, *[:hostname, :instance_type, :status, :private_ip, :availability_zone, :created_at, :instance_id].concat(arguments)
+              response.instances.each_slice(10).to_a.each do |items|
+	          	send_fields client, data.channel, items, *[:hostname, :instance_type, :status, :private_ip, :availability_zone, :created_at, :instance_id].concat(arguments)
+			  end
 
               #ls = response.instances.map { |inst| "*#{inst.hostname}*: *`#{inst.status}`* - `#{inst.private_ip}` - `#{inst.instance_type}` - `#{inst.availability_zone}` (_#{inst.instance_id}_)" }.compact
 
@@ -420,7 +422,7 @@ module SlackAws
               commands = opsworks_client.describe_commands(instance_id: instance.instance_id).commands
               fail "another command is currently running.  please wait for the prior command to complete before upgrading.  the prior command is in status *#{commands[0].status}*" if commands.size && commands[0].status != "successful" && commands[0].status != "failed"
 
-              grant_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:[instance.instance_id], command: { name: 'execute_recipes', args: { recipes: ["soxhub::grant_db"] }}, custom_json:"{\"soxhub\": { \"grant_db\": { \"instances\": { \"#{hostname}\": true } }}}")
+              grant_response = opsworks_client.create_deployment(stack_id: @@current_stack_id, instance_ids:[instance.instance_id], command: { name: 'execute_recipes', args: { recipes: ["soxhub::install_ssl", "soxhub::grant_db"] }}, custom_json:"{\"soxhub\": { \"grant_db\": { \"instances\": { \"#{hostname}\": true } }}}")
 
               send_message client, data.channel, "GRANT DB operation started!"
               send_message client, data.channel, "instance: *#{hostname}*, stack: *#{@@current_stack}*"
